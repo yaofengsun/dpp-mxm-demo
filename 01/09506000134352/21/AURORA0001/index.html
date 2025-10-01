@@ -1,161 +1,234 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DPP | 交互式问答（GS1）</title>
-  <meta name="description" content="Scan → view DPP details and ask questions.">
+  <meta charset="utf-8"/>
+  <title>DPP 交互式演示</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
-    :root{
-      --bg:#0b1a34; --card:#112443; --muted:#a8b6cc; --fg:#eef4ff; --acc:#6ea8fe; --ok:#44d19a; --border:#1f355f;
-    }
+    :root { --bg:#0c0f15; --card:#121723; --muted:#8a94a6; --accent:#5aa9ff; }
     *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(1200px 800px at 15% 5%, #0f2244 0%, var(--bg) 40%, #061229 90%);color:var(--fg);
-         font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif}
-    .wrap{max-width:1100px;margin:0 auto;padding:24px}
-    .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
-    .card{background:linear-gradient(180deg, rgba(17,36,67,.95), rgba(17,36,67,.75));border:1px solid var(--border);border-radius:16px;padding:18px}
-    h1{margin:0 0 8px;font-size:28px}
-    .muted{color:var(--muted)}
-    .badge{display:inline-block;padding:4px 10px;border:1px solid #2b4477;border-radius:999px;font-size:12px;color:#d7e6ff;margin:3px 6px 0 0}
-    a{color:var(--acc)}
-    .k{color:var(--muted);font-size:12px}
-    .v{font-weight:600}
-    .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .hr{height:1px;background:#21355c;margin:12px 0}
-    input[type="search"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2b4477;background:#0f223f;color:#e8f0ff}
-    .result{margin-top:8px;font-size:14px;line-height:1.6}
-    .faq{font-size:14px;line-height:1.7}
-    @media (max-width: 880px){ .grid{grid-template-columns:1fr} .row{grid-template-columns:1fr} }
+    body{margin:0;background:var(--bg);color:#e6e9ef;font-family:system-ui,Arial}
+    header{display:flex;gap:16px;align-items:center;padding:14px 18px;border-bottom:1px solid #1f2430;background:#0e131d;position:sticky;top:0;z-index:3}
+    header h1{font-size:16px;margin:0;font-weight:600}
+    header .spacer{flex:1}
+    header select,header input,header button{
+      background:#0c111a;border:1px solid #22293a;color:#e6e9ef;border-radius:8px;padding:8px 10px
+    }
+    header button{cursor:pointer}
+    main{display:grid;grid-template-columns: 300px 1fr 420px;gap:14px;padding:14px}
+    .card{background:var(--card);border:1px solid #1f2430;border-radius:14px;padding:14px}
+    .card h2{font-size:14px;margin:0 0 10px 0;color:#d0d6e5}
+    .muted{color:var(--muted);font-size:13px}
+    .btn{display:inline-block;padding:8px 12px;border-radius:10px;background:#12223a;border:1px solid #2a3950;color:#e6e9ef;text-decoration:none}
+    .btn:hover{border-color:#416089}
+    .row{display:flex;gap:8px;align-items:center;margin:8px 0}
+    #answer_text{white-space:pre-wrap;line-height:1.4;border-top:1px dashed #2a3040;margin-top:10px;padding-top:10px}
+    /* timeline */
+    .timeline{display:flex;flex-direction:column;gap:10px}
+    .station{border-left:4px solid #2a3040;padding-left:10px}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#1a2130;margin-left:6px;font-size:12px}
+    .green{border-color:#2ecc71}.yellow{border-color:#f1c40f}.red{border-color:#e74c3c}
+    .score{font-size:28px;font-weight:700}
+    .bar{height:6px;background:#1a2030;border-radius:6px;overflow:hidden}
+    .bar>div{height:100%;background:linear-gradient(90deg,#36d1dc,#5b86e5);width:0%}
+    .alert{padding:10px;border-radius:10px;margin:8px 0;font-size:13px}
+    .alert.error{background:#3a1f25;border:1px solid #8c3947}
+    .alert.warning{background:#3a321f;border:1px solid #8c6b39}
+    code{background:#101522;border:1px solid #1f2430;border-radius:6px;padding:2px 6px}
+    @media (max-width: 1100px){ main{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="grid">
-      <section class="card" id="panel-info">
-        <h1>产品护照（DPP）</h1>
-        <p class="muted" id="desc">正在读取 dpp.json ...</p>
-        <div class="row">
-          <div><div class="k">品牌</div><div class="v" id="brand">-</div></div>
-          <div><div class="k">产品</div><div class="v" id="name">-</div></div>
-          <div><div class="k">型号</div><div class="v" id="model">-</div></div>
-          <div><div class="k">类别</div><div class="v" id="category">-</div></div>
-          <div><div class="k">GTIN</div><div class="v" id="gtin">-</div></div>
-          <div><div class="k">序列号</div><div class="v" id="serial">-</div></div>
-          <div><div class="k">SKU</div><div class="v" id="sku">-</div></div>
-          <div><div class="k">工厂/日期</div><div class="v" id="mfg">-</div></div>
+  <header>
+    <h1>DPP 交互式演示</h1>
+    <div class="spacer"></div>
+    <!-- 语言 & 品牌切换 -->
+    <label class="muted">语言</label>
+    <select id="lang">
+      <option value="zh">中文</option><option value="en">English</option>
+      <option value="de">Deutsch</option><option value="fr">Français</option>
+    </select>
+    <label class="muted">品牌</label>
+    <select id="brand">
+      <option value="default">Default</option>
+      <option value="zara">ZARA</option>
+      <option value="nike">Nike</option>
+      <option value="hm">H&M</option>
+    </select>
+    <!-- 扫码/输入 -->
+    <input id="code" style="min-width:360px" placeholder="粘贴或扫描 GS1 Digital Link，例如 https://id.gs1.org/01/.../21/AB123">
+    <button id="fill-sample">填入示例</button>
+    <button id="run">查询</button>
+  </header>
+
+  <main>
+    <!-- 左：静态 DPP 区 -->
+    <section class="card">
+      <h2>产品 DPP（静态信息）</h2>
+      <div class="muted">此区域显示基础信息，并链接到你现有的 DPP 页面。</div>
+      <div id="static-info" style="margin-top:10px">
+        <div class="row">GTIN：<code id="gtin">—</code></div>
+        <div class="row">序列号：<code id="serial">—</code></div>
+        <div class="row">批次：<code id="batch">—</code></div>
+        <div class="row">DPP 页面：<a id="dpp-link" class="btn" target="_blank" rel="noopener">打开</a></div>
+        <div class="row muted">（你可以把 dpp.json 的关键字段也渲染在这里）</div>
+      </div>
+    </section>
+
+    <!-- 中：交互问答 -->
+    <section class="card">
+      <h2>一物一码 · 交互式问答</h2>
+      <div class="muted">在这里直接提问：碳排放？可回收性？维修建议？法规解释？</div>
+      <div class="row">
+        <input id="qa" style="flex:1" placeholder="例如：这件衣服的 CO₂ 排放是多少？"/>
+        <button id="ask" class="btn">提问</button>
+      </div>
+      <div id="answer_text"></div>
+    </section>
+
+    <!-- 右：旅程 + 分数 + 合规 -->
+    <section class="card">
+      <h2>产品旅程 & 合规健康度</h2>
+      <div class="row">
+        <div class="score" id="score">—</div>
+        <div style="flex:1">
+          <div class="bar"><div id="bar"></div></div>
+          <div class="muted" id="score-detail"></div>
         </div>
+      </div>
+      <div id="alerts"></div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+  </main>
 
-        <div class="hr"></div>
+  <script>
+    // ======= 配置（替换为你的实际值，或改成你的后端代理）=======
+    const DIFY_ENDPOINT = "https://YOUR_DIFY_WORKFLOW_ENDPOINT";
+    const DIFY_KEY      = "YOUR_DIFY_API_KEY"; // 生产请不要放前端，改用代理！
 
-        <div>
-          <div class="k">材料成分</div>
-          <div id="materials" class="muted">-</div>
-        </div>
+    // ======= URL 参数 & 默认值 =======
+    const params = new URLSearchParams(location.search);
+    const initCode = params.get('code') || "https://id.gs1.org/01/09506000123457/21/AB123";
+    const initLang = params.get('lang') || (navigator.language || 'en').slice(0,2);
 
-        <div class="hr"></div>
+    // ======= DOM =======
+    const $ = sel => document.querySelector(sel);
+    $('#code').value = initCode;
+    $('#lang').value = ['zh','en','de','fr'].includes(initLang) ? initLang : 'en';
 
-        <div class="row">
-          <div>
-            <div class="k">保养要点</div>
-            <ul id="care" class="muted" style="margin:6px 0 0 18px"></ul>
-          </div>
-          <div>
-            <div class="k">可持续关键指标</div>
-            <div id="sust" class="muted">-</div>
-          </div>
-        </div>
+    // ======= 品牌主题（示例：仅换背景/强调色；可接入完整主题）=======
+    const brandThemes = {
+      default:{accent:'#5aa9ff'},
+      zara:{accent:'#f2e9e4'},
+      nike:{accent:'#ff7a00'},
+      hm:{accent:'#e60026'}
+    };
+    function applyBrandTheme(name){
+      const t = brandThemes[name] || brandThemes.default;
+      document.documentElement.style.setProperty('--accent', t.accent);
+    }
+    $('#brand').addEventListener('change', e=> applyBrandTheme(e.target.value));
+    applyBrandTheme($('#brand').value);
 
-        <p class="muted" style="margin-top:10px">
-          数据源：<a id="jsonLink" href="#">dpp.json</a>
-        </p>
-      </section>
-
-      <section class="card" id="panel-qa">
-        <h2 style="margin:0 0 6px">交互式问答</h2>
-        <p class="muted">在下方对话框中提问，例如：<i>能机洗吗？碳足迹是多少？里料材质？</i></p>
-        <!-- 轻量本地搜索（关键词高亮） -->
-        <input type="search" id="search" placeholder="在本页关键字段中快速搜索（非LLM）..." />
-        <div class="result muted" id="searchResult"></div>
-
-        <div class="hr"></div>
-
-        <!-- Dify 嵌入占位：请到 Dify 的 App / Channels / Website Widget 复制嵌入脚本，粘贴到下方 -->
-        <div id="difySlot" class="muted">
-          <p style="margin:0 0 6px">AI 问答（Dify）：</p>
-          <!-- BEGIN DIFY EMBED -->
-          <!-- PASTE YOUR DIFY WEBSITE WIDGET CODE HERE -->
-          <!-- END DIFY EMBED -->
-          <p class="muted" style="font-size:12px;margin-top:6px">提示：在 Dify 的工作流中，加入一个 HTTP 节点读取本页的 <code>dpp.json</code>，URL 可由系统变量传入。</p>
-        </div>
-      </section>
-    </div>
-  </div>
-
-<script>
-(function(){
-  // 获取 ?dpp= 覆盖；默认读取同目录 ./dpp.json（即 GS1 路径下的 JSON）
-  const params = new URLSearchParams(location.search);
-  const dppUrl = params.get('dpp') || './dpp.json';
-  const $ = sel => document.querySelector(sel);
-
-  fetch(dppUrl)
-    .then(r => r.json())
-    .then(d => {
-      $('#desc').textContent = d.product?.description || '—';
-      $('#brand').textContent = d.product?.brand || '—';
-      $('#name').textContent = d.product?.name || '—';
-      $('#model').textContent = d.product?.model || '—';
-      $('#category').textContent = (d.product?.category || []).join(', ') || '—';
-      $('#gtin').textContent = d.product?.gtin || '—';
-      $('#serial').textContent = d.product?.serial || '—';
-      $('#sku').textContent = d.product?.sku || '—';
-
-      const mfgName = d.manufacturing?.manufacturer?.name || '';
-      const mfgDate = d.manufacturing?.production_date || '';
-      $('#mfg').textContent = [mfgName, mfgDate].filter(Boolean).join(' · ') || '—';
-
-      const shell = (d.materials?.shell || []).map(x => `${x.material} ${x.percentage||''}%`).join('，');
-      const lining = (d.materials?.lining || []).map(x => `${x.material} ${x.percentage||''}%`).join('，');
-      $('#materials').textContent = [shell && ('面料：'+shell), lining && ('里料：'+lining)].filter(Boolean).join('；') || '—';
-
-      const care = d.care?.instructions || [];
-      const careUl = $('#care'); careUl.innerHTML = '';
-      care.forEach(x => {
-        const li = document.createElement('li'); li.textContent = x; careUl.appendChild(li);
+    // ======= 调 Dify：主查询（含解析/旅程/评分/摘要JSON 一次返回）=======
+    async function callDify(codePayload, lang, userQuestion=""){
+      const res = await fetch(DIFY_ENDPOINT, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${DIFY_KEY}` },
+        body: JSON.stringify({ inputs:{ query: userQuestion, codePayload, lang } })
       });
+      if(!res.ok){ throw new Error('Dify 请求失败'); }
+      return await res.json();
+    }
 
-      const cf = d.sustainability?.carbon_footprint?.cradle_to_gate;
-      const water = d.sustainability?.water_intensity?.value;
-      const recycled = d.sustainability?.recycled_content?.percentage;
-      const rep = d.sustainability?.repairability_score;
-      $('#sust').textContent = `碳足迹：${cf ?? '—'} kgCO₂e；用水：${water ?? '—'} L/件；再生含量：${recycled ?? '—'}%；可维修性：${rep ?? '—'}/10`;
+    // ======= 渲染工具 =======
+    function setStatic(gtin, serial, batch){
+      $('#gtin').textContent = gtin || '—';
+      $('#serial').textContent = serial || '—';
+      $('#batch').textContent = batch || '—';
+      // 你的 DPP 页面基于产品路径；这里演示为固定链接或带上序列参数
+      const dppUrl = "https://yaofengsun.github.io/dpp-mxm-demo/"; // 你的主DPP页或产品详情页
+      $('#dpp-link').href = dppUrl + (serial ? `?serial=${encodeURIComponent(serial)}` : '');
+    }
+    function setScore(score, breakdown){
+      $('#score').textContent = (typeof score==='number') ? score : '—';
+      $('#bar>div').style.width = (typeof score==='number' ? Math.max(0,Math.min(100,score)) : 0) + '%';
+      if(breakdown){
+        $('#score-detail').textContent =
+          `完整度 ${breakdown.completeness} | 可信度 ${breakdown.credibility} | 新鲜度 ${breakdown.freshness} | 一致性 ${breakdown.consistency}`;
+      } else { $('#score-detail').textContent=''; }
+    }
+    function setAlerts(list){
+      const box = $('#alerts'); box.innerHTML = '';
+      (list||[]).forEach(a=>{
+        const div = document.createElement('div');
+        div.className = 'alert ' + (a.level==='error'?'error':'warning');
+        div.textContent = (a.level==='error'?'❗ ':'⚠️ ') + a.msg;
+        box.appendChild(div);
+      });
+    }
+    function setTimeline(journey){
+      const wrap = $('#timeline'); wrap.innerHTML='';
+      (journey?.stations||[]).forEach(s=>{
+        const div = document.createElement('div'); div.className = 'station ' + (s.status||'');
+        div.innerHTML = `
+          <div><b>${s.name||s.id||'—'}</b>
+            <span class="badge">${s.status||'—'}</span></div>
+          <div class="muted">时间：${s.time||'—'}；位置：${s.geo ? (s.geo.lat.toFixed(2)+', '+s.geo.lng.toFixed(2)) : '—'}</div>
+          <div>字段：${Object.keys(s.fields||{}).length? `<code>${escapeHTML(JSON.stringify(s.fields))}</code>` : '—'}</div>
+          <div class="muted">证据：${(s.evidence||[]).map(e=>e.type).join(', ')||'—'}</div>`;
+        wrap.appendChild(div);
+      });
+    }
+    function escapeHTML(s){return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-      $('#jsonLink').href = dppUrl;
-
-      // 轻量客户端索引用于顶部搜索
-      window.__DPP_TEXT__ = JSON.stringify(d, null, 2);
-    })
-    .catch(err => {
-      $('#desc').textContent = '未能加载 dpp.json：' + err;
+    // ======= 主查询流程（点击“查询”）=======
+    $('#run').addEventListener('click', async ()=>{
+      const code = $('#code').value.trim();
+      const lang = $('#lang').value;
+      try{
+        const data = await callDify(code, lang, "");
+        // LLM 摘要文本
+        $('#answer_text').textContent = (data.outputs && data.outputs.answer_text) || '';
+        // 渲染 JSON
+        const render = JSON.parse(data.outputs.render_json || "{}");
+        // 如果你的 Workflow 在 JSON 里附带了解析结果（可选）：render.ids.gtin/serial
+        // 否则你也可以让 Dify 单独返回解析结果；这里做容错处理：
+        const gtin = (render.ids && render.ids.gtin) || extractFromAnswer($('#answer_text').textContent, /GTIN[:：]\s*(\d{8,14})/);
+        const serial = (render.ids && render.ids.serial) || extractFromAnswer($('#answer_text').textContent, /序列号[:：]\s*([A-Za-z0-9._-]+)/);
+        setStatic(gtin, serial, null);
+        setScore(render?.scorecard?.score, render?.scorecard?.breakdown);
+        setAlerts(render?.alerts||[]);
+        setTimeline(render?.journey||{stations:[]});
+      }catch(err){
+        alert('请求失败：' + err.message);
+      }
     });
 
-  // 简易关键词搜索（不依赖后端/LLM）
-  $('#search').addEventListener('input', (e)=>{
-    const q = e.target.value.trim().toLowerCase();
-    const box = $('#searchResult');
-    if(!q){ box.textContent = ''; return; }
-    const text = (window.__DPP_TEXT__ || '').toLowerCase();
-    if(!text){ box.textContent = '尚未加载数据。'; return; }
-    const idx = text.indexOf(q);
-    if(idx < 0){ box.textContent = '未命中。尝试 “wool / polyester / gtin / care / carbon” 等关键词。'; return; }
-    const start = Math.max(0, idx - 60);
-    const end = Math.min(text.length, idx + 60);
-    const snippet = text.slice(start, end).replace(q, '【'+q+'】');
-    box.textContent = '…' + snippet + '…';
-  });
-})();
-</script>
+    // ======= 提问（在当前 code 的上下文里）=======
+    $('#ask').addEventListener('click', async ()=>{
+      const code = $('#code').value.trim();
+      const lang = $('#lang').value;
+      const q = $('#qa').value.trim() || "这件产品的关键可持续信息是什么？";
+      try{
+        const data = await callDify(code, lang, q);
+        $('#answer_text').textContent = (data.outputs && data.outputs.answer_text) || '';
+        const render = JSON.parse(data.outputs.render_json || "{}");
+        setScore(render?.scorecard?.score, render?.scorecard?.breakdown);
+        setAlerts(render?.alerts||[]);
+        setTimeline(render?.journey||{stations:[]});
+      }catch(err){
+        alert('请求失败：' + err.message);
+      }
+    });
 
+    // ======= 示例填充 & 自动首查 =======
+    $('#fill-sample').addEventListener('click', ()=>{
+      $('#code').value = "https://id.gs1.org/01/09506000123457/21/AB123";
+    });
+    function extractFromAnswer(text, re){
+      const m = (text||'').match(re); return m? m[1]: null;
+    }
+  </script>
 </body>
 </html>
