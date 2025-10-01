@@ -1,11 +1,161 @@
-<!doctype html><html lang="zh-CN"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GS1 Digital Link | Aurora Wool Blend Overcoat</title>
-<style>body{font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto;margin:0;padding:24px;background:#0b1220;color:#e7eefc}a{color:#6ea8fe}</style>
-</head><body>
-<h1>GS1 Digital Link</h1>
-<p>/01/09506000134352/21/AURORA0001/</p>
-<p>产品：Aurora Wool Blend Overcoat · GTIN 09506000134352 · 序列号 AURORA0001</p>
-<p>JSON: <a href="dpp.json">dpp.json</a></p>
-<p><a href="../../../../">返回根目录</a></p>
-</body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DPP | 交互式问答（GS1）</title>
+  <meta name="description" content="Scan → view DPP details and ask questions.">
+  <style>
+    :root{
+      --bg:#0b1a34; --card:#112443; --muted:#a8b6cc; --fg:#eef4ff; --acc:#6ea8fe; --ok:#44d19a; --border:#1f355f;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 800px at 15% 5%, #0f2244 0%, var(--bg) 40%, #061229 90%);color:var(--fg);
+         font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
+    .card{background:linear-gradient(180deg, rgba(17,36,67,.95), rgba(17,36,67,.75));border:1px solid var(--border);border-radius:16px;padding:18px}
+    h1{margin:0 0 8px;font-size:28px}
+    .muted{color:var(--muted)}
+    .badge{display:inline-block;padding:4px 10px;border:1px solid #2b4477;border-radius:999px;font-size:12px;color:#d7e6ff;margin:3px 6px 0 0}
+    a{color:var(--acc)}
+    .k{color:var(--muted);font-size:12px}
+    .v{font-weight:600}
+    .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .hr{height:1px;background:#21355c;margin:12px 0}
+    input[type="search"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2b4477;background:#0f223f;color:#e8f0ff}
+    .result{margin-top:8px;font-size:14px;line-height:1.6}
+    .faq{font-size:14px;line-height:1.7}
+    @media (max-width: 880px){ .grid{grid-template-columns:1fr} .row{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid">
+      <section class="card" id="panel-info">
+        <h1>产品护照（DPP）</h1>
+        <p class="muted" id="desc">正在读取 dpp.json ...</p>
+        <div class="row">
+          <div><div class="k">品牌</div><div class="v" id="brand">-</div></div>
+          <div><div class="k">产品</div><div class="v" id="name">-</div></div>
+          <div><div class="k">型号</div><div class="v" id="model">-</div></div>
+          <div><div class="k">类别</div><div class="v" id="category">-</div></div>
+          <div><div class="k">GTIN</div><div class="v" id="gtin">-</div></div>
+          <div><div class="k">序列号</div><div class="v" id="serial">-</div></div>
+          <div><div class="k">SKU</div><div class="v" id="sku">-</div></div>
+          <div><div class="k">工厂/日期</div><div class="v" id="mfg">-</div></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div>
+          <div class="k">材料成分</div>
+          <div id="materials" class="muted">-</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div>
+            <div class="k">保养要点</div>
+            <ul id="care" class="muted" style="margin:6px 0 0 18px"></ul>
+          </div>
+          <div>
+            <div class="k">可持续关键指标</div>
+            <div id="sust" class="muted">-</div>
+          </div>
+        </div>
+
+        <p class="muted" style="margin-top:10px">
+          数据源：<a id="jsonLink" href="#">dpp.json</a>
+        </p>
+      </section>
+
+      <section class="card" id="panel-qa">
+        <h2 style="margin:0 0 6px">交互式问答</h2>
+        <p class="muted">在下方对话框中提问，例如：<i>能机洗吗？碳足迹是多少？里料材质？</i></p>
+        <!-- 轻量本地搜索（关键词高亮） -->
+        <input type="search" id="search" placeholder="在本页关键字段中快速搜索（非LLM）..." />
+        <div class="result muted" id="searchResult"></div>
+
+        <div class="hr"></div>
+
+        <!-- Dify 嵌入占位：请到 Dify 的 App / Channels / Website Widget 复制嵌入脚本，粘贴到下方 -->
+        <div id="difySlot" class="muted">
+          <p style="margin:0 0 6px">AI 问答（Dify）：</p>
+          <!-- BEGIN DIFY EMBED -->
+          <!-- PASTE YOUR DIFY WEBSITE WIDGET CODE HERE -->
+          <!-- END DIFY EMBED -->
+          <p class="muted" style="font-size:12px;margin-top:6px">提示：在 Dify 的工作流中，加入一个 HTTP 节点读取本页的 <code>dpp.json</code>，URL 可由系统变量传入。</p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // 获取 ?dpp= 覆盖；默认读取同目录 ./dpp.json（即 GS1 路径下的 JSON）
+  const params = new URLSearchParams(location.search);
+  const dppUrl = params.get('dpp') || './dpp.json';
+  const $ = sel => document.querySelector(sel);
+
+  fetch(dppUrl)
+    .then(r => r.json())
+    .then(d => {
+      $('#desc').textContent = d.product?.description || '—';
+      $('#brand').textContent = d.product?.brand || '—';
+      $('#name').textContent = d.product?.name || '—';
+      $('#model').textContent = d.product?.model || '—';
+      $('#category').textContent = (d.product?.category || []).join(', ') || '—';
+      $('#gtin').textContent = d.product?.gtin || '—';
+      $('#serial').textContent = d.product?.serial || '—';
+      $('#sku').textContent = d.product?.sku || '—';
+
+      const mfgName = d.manufacturing?.manufacturer?.name || '';
+      const mfgDate = d.manufacturing?.production_date || '';
+      $('#mfg').textContent = [mfgName, mfgDate].filter(Boolean).join(' · ') || '—';
+
+      const shell = (d.materials?.shell || []).map(x => `${x.material} ${x.percentage||''}%`).join('，');
+      const lining = (d.materials?.lining || []).map(x => `${x.material} ${x.percentage||''}%`).join('，');
+      $('#materials').textContent = [shell && ('面料：'+shell), lining && ('里料：'+lining)].filter(Boolean).join('；') || '—';
+
+      const care = d.care?.instructions || [];
+      const careUl = $('#care'); careUl.innerHTML = '';
+      care.forEach(x => {
+        const li = document.createElement('li'); li.textContent = x; careUl.appendChild(li);
+      });
+
+      const cf = d.sustainability?.carbon_footprint?.cradle_to_gate;
+      const water = d.sustainability?.water_intensity?.value;
+      const recycled = d.sustainability?.recycled_content?.percentage;
+      const rep = d.sustainability?.repairability_score;
+      $('#sust').textContent = `碳足迹：${cf ?? '—'} kgCO₂e；用水：${water ?? '—'} L/件；再生含量：${recycled ?? '—'}%；可维修性：${rep ?? '—'}/10`;
+
+      $('#jsonLink').href = dppUrl;
+
+      // 轻量客户端索引用于顶部搜索
+      window.__DPP_TEXT__ = JSON.stringify(d, null, 2);
+    })
+    .catch(err => {
+      $('#desc').textContent = '未能加载 dpp.json：' + err;
+    });
+
+  // 简易关键词搜索（不依赖后端/LLM）
+  $('#search').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    const box = $('#searchResult');
+    if(!q){ box.textContent = ''; return; }
+    const text = (window.__DPP_TEXT__ || '').toLowerCase();
+    if(!text){ box.textContent = '尚未加载数据。'; return; }
+    const idx = text.indexOf(q);
+    if(idx < 0){ box.textContent = '未命中。尝试 “wool / polyester / gtin / care / carbon” 等关键词。'; return; }
+    const start = Math.max(0, idx - 60);
+    const end = Math.min(text.length, idx + 60);
+    const snippet = text.slice(start, end).replace(q, '【'+q+'】');
+    box.textContent = '…' + snippet + '…';
+  });
+})();
+</script>
+
+</body>
+</html>
